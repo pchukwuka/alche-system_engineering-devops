@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+service nginx start || /etc/init.d/nginx start
+sed -i 's/listen 80 default_server;/listen 80 default_server;\n\tlisten 0.0.0.0:80 default_server;/' /etc/nginx/sites-available/default
+service nginx restart || /etc/init.d/nginx restart
