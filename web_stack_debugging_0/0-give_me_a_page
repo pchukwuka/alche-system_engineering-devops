@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 service apache2 start
+echo "apache2 is running"
 echo "Hello Holberton" > /var/www/html/index.html
