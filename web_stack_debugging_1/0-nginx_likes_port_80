@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 # Fix nginx to listen on port 80 on all IPv4 addresses
-conf="$(grep -Rsl 'listen 80' /etc/nginx 2>/dev/null | head -n 1)"
-[ -n "$conf" ] && sed -i 's/listen 127.0.0.1:80;/listen 0.0.0.0:80;/; s/listen 80 default_server;/listen 0.0.0.0:80 default_server;/; s/listen 80;/listen 0.0.0.0:80;/' "$conf"
-service nginx start || /etc/init.d/nginx start || true
-nginx -t && (service nginx restart || /etc/init.d/nginx restart)
+
+service apache2 stop 2>/dev/null || true
+pkill -f apache2 2>/dev/null || true
+
+# Replace any localhost-only listen directives
+grep -RslE 'listen (127\.0\.0\.1|localhost):80' /etc/nginx 2>/dev/null | while read -r f; do
+  sed -i -E 's/listen (127\.0\.0\.1|localhost):80/listen 80/g' "$f"
+done
+
+service nginx start 2>/dev/null || /etc/init.d/nginx start 2>/dev/null || true
+nginx -t >/dev/null 2>&1 && (service nginx restart 2>/dev/null || /etc/init.d/nginx restart 2>/dev/null)
