@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start nginx without service
-service nginx stop
+# Make nginx listen on port 80 without service
+sed -i 's/listen 127.0.0.1:80/listen 80/' /etc/nginx/nginx.conf
 nginx
-service nginx status
+rm -f /run/nginx.pid
