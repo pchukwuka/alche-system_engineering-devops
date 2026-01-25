@@ -1,3 +1,5 @@
 #!/usr/bin/env bash
-# Make nginx serve on port 80 without running as a service
+# Start nginx without service
+service nginx stop
 nginx
+service nginx status
