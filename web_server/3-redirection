@@ -4,10 +4,13 @@
 apt-get update -y
 apt-get install -y nginx
 
-REDIRECT='rewrite ^/redirect_me/?$ https://www.youtube.com/watch?v=QH2-TGUlwu4 permanent;'
+# Allow HTTP if firewall is enabled
+ufw allow 80/tcp >/dev/null 2>&1 || true
 
-grep -q "redirect_me" /etc/nginx/sites-available/default || \
-sed -i "/listen 80 default_server;/a $REDIRECT" /etc/nginx/sites-available/default
+# Add redirect only once
+if ! grep -qE 'location\s+~\s+\^\?/redirect_me' /etc/nginx/sites-available/default; then
+  sed -i 's/server_name _;/server_name _;\n\n\tlocation ~ ^\/redirect_me\/?$ {\n\t\treturn 301 https:\/\/www.youtube.com\/watch?v=QH2-TGUlwu4;\n\t}\n/' /etc/nginx/sites-available/default
+fi
 
-service nginx start
+nginx -t
 service nginx restart
