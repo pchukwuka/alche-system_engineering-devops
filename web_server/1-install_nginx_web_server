@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install and configure nginx to serve a page with Holberton School
+# Install and configure nginx web server
 
 apt-get update -y
 apt-get install -y nginx
@@ -8,5 +8,6 @@ echo "Holberton School for the win!" > /var/www/html/index.html
 
 service nginx restart
 
-nginx -v
+nginx -v 2>&1
+curl -sI localhost | awk 'NR==1 {print $2}'
 curl -s localhost
