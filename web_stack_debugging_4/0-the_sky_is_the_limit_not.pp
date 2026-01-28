@@ -1,22 +1,41 @@
-# Increase Nginx limits so the web server can handle high concurrent traffic
+# Fix Nginx/Apache limits so the stack can handle high concurrency
 
 exec { 'fix--for-nginx':
-  command => '
-CONF=/etc/nginx/nginx.conf
+  command => @("BASH")
+    set -e
 
-# Increase worker_connections inside events block
-sed -i "s/worker_connections [0-9]\+;/worker_connections 4096;/" $CONF
+    NGINX_CONF="/etc/nginx/nginx.conf"
+    APACHE_CONF="/etc/apache2/mods-enabled/mpm_prefork.conf"
 
-# Increase file descriptor limit
-if ! grep -q "worker_rlimit_nofile" $CONF; then
-  sed -i "/worker_processes/a worker_rlimit_nofile 8192;" $CONF
-else
-  sed -i "s/worker_rlimit_nofile [0-9]\+;/worker_rlimit_nofile 8192;/" $CONF
-fi
+    # Nginx: raise worker_connections (any value) and file limit
+    if [ -f "$NGINX_CONF" ]; then
+      sed -i 's/worker_connections[[:space:]]*[0-9]\\+;/worker_connections 4096;/' "$NGINX_CONF"
 
-# Restart nginx
-pkill -f nginx || true
-/usr/sbin/nginx
-',
-  path => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
+      if grep -q 'worker_rlimit_nofile' "$NGINX_CONF"; then
+        sed -i 's/worker_rlimit_nofile[[:space:]]*[0-9]\\+;/worker_rlimit_nofile 8192;/' "$NGINX_CONF"
+      else
+        sed -i '/worker_processes/a worker_rlimit_nofile 8192;' "$NGINX_CONF"
+      fi
+    fi
+
+    # Apache: raise prefork limits so it can serve many requests at once
+    if [ -f "$APACHE_CONF" ]; then
+      sed -i 's/^\\s*ServerLimit\\s\\+[0-9]\\+/ServerLimit          256/' "$APACHE_CONF" || true
+      sed -i 's/^\\s*MaxRequestWorkers\\s\\+[0-9]\\+/MaxRequestWorkers   256/' "$APACHE_CONF" || true
+      sed -i 's/^\\s*MaxClients\\s\\+[0-9]\\+/MaxClients          256/' "$APACHE_CONF" || true
+    fi
+
+    # Restart services (no systemctl)
+    if [ -x /etc/init.d/apache2 ]; then
+      /etc/init.d/apache2 restart
+    fi
+
+    if [ -x /etc/init.d/nginx ]; then
+      /etc/init.d/nginx restart
+    else
+      pkill -f nginx || true
+      /usr/sbin/nginx
+    fi
+    BASH
+  path    => ["/bin", "/usr/bin", "/sbin", "/usr/sbin"],
 }
