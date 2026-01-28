@@ -3,34 +3,23 @@
 
 set -e
 
-# Make sure nginx can write its runtime and temp files
 mkdir -p /run/nginx /var/cache/nginx /var/log/nginx
 chown -R nginx:nginx /run/nginx /var/cache/nginx /var/log/nginx
 
-# Run nginx workers as nginx
 sed -i 's/^[[:space:]]*user[[:space:]].*;/user nginx;/' /etc/nginx/nginx.conf
 
-# Put PID where nginx user can write
-if grep -qE '^[[:space:]]*pid[[:space:]]+' /etc/nginx/nginx.conf; then
-  sed -i 's|^[[:space:]]*pid[[:space:]].*;|pid /run/nginx/nginx.pid;|' /etc/nginx/nginx.conf
+if grep -q '^pid' /etc/nginx/nginx.conf; then
+  sed -i 's|^pid .*;|pid /run/nginx/nginx.pid;|' /etc/nginx/nginx.conf
 else
-  printf '\npid /run/nginx/nginx.pid;\n' >> /etc/nginx/nginx.conf
+  echo 'pid /run/nginx/nginx.pid;' >> /etc/nginx/nginx.conf
 fi
 
-# Listen on 8080 on all IPs (fix the right file)
-if [ -f /etc/nginx/sites-enabled/default ]; then
-  sed -i 's/listen 80 default_server;/listen 8080 default_server;/' /etc/nginx/sites-enabled/default
-  sed -i 's/listen \[::\]:80 default_server;/listen [::]:8080 default_server;/' /etc/nginx/sites-enabled/default
-  sed -i 's/listen 80;/listen 8080;/' /etc/nginx/sites-enabled/default
-  sed -i 's/listen \[::\]:80;/listen [::]:8080;/' /etc/nginx/sites-enabled/default
-fi
+sed -i 's/listen 80 default_server;/listen 8080 default_server;/' /etc/nginx/sites-enabled/default
+sed -i 's/listen \[::\]:80 default_server;/listen [::]:8080 default_server;/' /etc/nginx/sites-enabled/default
+sed -i 's/listen 80;/listen 8080;/' /etc/nginx/sites-enabled/default
+sed -i 's/listen \[::\]:80;/listen [::]:8080;/' /etc/nginx/sites-enabled/default
 
-if [ -f /etc/nginx/conf.d/default.conf ]; then
-  sed -i 's/listen 80;/listen 8080;/' /etc/nginx/conf.d/default.conf
-  sed -i 's/listen 0.0.0.0:8080;/listen 8080;/' /etc/nginx/conf.d/default.conf
-fi
-
-# Restart without service/systemctl
-pkill nginx 2>/dev/null || true
+pkill nginx || true
 su -s /bin/sh -c "/usr/sbin/nginx -g 'daemon on;'" nginx
 
+pgrep -a nginx
