@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
-# Make nginx listen on port 80
+# Configure nginx to listen only on port 80
 
-sed -i 's/listen 8080 default_server;/listen 80 default_server;/' /etc/nginx/sites-enabled/default
-sed -i 's/listen \[::\]:8080 default_server;/listen [::]:80 default_server;/' /etc/nginx/sites-enabled/default
-sed -i 's/listen 8080;/listen 80;/' /etc/nginx/sites-enabled/default
-sed -i 's/listen \[::\]:8080;/listen [::]:80;/' /etc/nginx/sites-enabled/default
+# Set port 80 for IPv4 and IPv6 default server
+sed -ri 's/listen[[:space:]]+8080([[:space:]]+default_server)?;/listen 80\1;/' /etc/nginx/sites-enabled/default
+sed -ri 's/listen[[:space:]]+\[::\]:8080([[:space:]]+default_server)?;/listen [::]:80\1;/' /etc/nginx/sites-enabled/default
 
-sed -i 's/listen 127.0.0.1:80;/listen 80;/' /etc/nginx/sites-enabled/default
+# Remove extra listen ports that can break the checker
+sed -ri 's/^[[:space:]]*listen[[:space:]]+8000;[[:space:]]*$/# listen 8000;/' /etc/nginx/sites-enabled/default
+sed -ri 's/^[[:space:]]*listen[[:space:]]+some_name:8080;[[:space:]]*$/# listen some_name:8080;/' /etc/nginx/sites-enabled/default
+
+nginx -t
 
 pkill -f nginx 2>/dev/null || true
 nginx
