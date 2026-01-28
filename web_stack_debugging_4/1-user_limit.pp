@@ -1,21 +1,11 @@
-# Fix "Too many open files" for holberton user by adjusting OS limits
+# Raise holberton open-files limit and ensure pam_limits loads for su/login
 
 exec { 'change-os-configuration-for-holberton-user':
-  command => 'grep -q "^holberton soft nofile" /etc/security/limits.conf || \
-echo "holberton soft nofile 4096" >> /etc/security/limits.conf
-grep -q "^holberton hard nofile" /etc/security/limits.conf || \
-echo "holberton hard nofile 8192" >> /etc/security/limits.conf
-grep -q "^session required pam_limits.so" /etc/pam.d/su || \
-echo "session required pam_limits.so" >> /etc/pam.d/su
-test ! -f /etc/pam.d/su-l || \
-(grep -q "^session required pam_limits.so" /etc/pam.d/su-l || \
-echo "session required pam_limits.so" >> /etc/pam.d/su-l)
-test ! -f /etc/pam.d/common-session || \
-(grep -q "pam_limits.so" /etc/pam.d/common-session || \
-echo "session required pam_limits.so" >> /etc/pam.d/common-session)
-test ! -f /etc/pam.d/common-session-noninteractive || \
-(grep -q "pam_limits.so" /etc/pam.d/common-session-noninteractive || \
-echo "session required pam_limits.so" >> /etc/pam.d/common-session-noninteractive)
-true',
+  command => 'printf "holberton soft nofile 4096\nholberton hard nofile 8192\n" > /etc/security/limits.d/holberton.conf
+for f in /etc/pam.d/su /etc/pam.d/su-l /etc/pam.d/common-session /etc/pam.d/common-session-noninteractive /etc/pam.d/system-auth /etc/pam.d/password-auth /etc/pam.d/sshd /etc/pam.d/login; do
+  [ -f "$f" ] || continue
+  grep -q "pam_limits.so" "$f" && continue
+  echo "session required pam_limits.so" >> "$f"
+done',
   path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
 }
