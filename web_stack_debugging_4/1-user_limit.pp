@@ -12,6 +12,10 @@ test ! -f /etc/pam.d/su-l || \
 echo "session required pam_limits.so" >> /etc/pam.d/su-l)
 test ! -f /etc/pam.d/common-session || \
 (grep -q "pam_limits.so" /etc/pam.d/common-session || \
-echo "session required pam_limits.so" >> /etc/pam.d/common-session)',
+echo "session required pam_limits.so" >> /etc/pam.d/common-session)
+test ! -f /etc/pam.d/common-session-noninteractive || \
+(grep -q "pam_limits.so" /etc/pam.d/common-session-noninteractive || \
+echo "session required pam_limits.so" >> /etc/pam.d/common-session-noninteractive)
+true',
   path    => ['/bin', '/usr/bin', '/sbin', '/usr/sbin'],
 }
