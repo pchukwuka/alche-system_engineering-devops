@@ -4,13 +4,19 @@
 apt-get update -y
 apt-get install -y nginx
 
+# Allow HTTP if firewall exists
+ufw allow 80/tcp >/dev/null 2>&1 || true
+
 # Create custom 404 page in nginx default root
 echo "Ceci n'est pas une page" > /usr/share/nginx/html/404.html
 
-# Configure nginx to use it
+# Configure nginx to use it (only once)
 grep -q "error_page 404" /etc/nginx/sites-available/default || \
 sed -i '/listen 80 default_server;/a \
 \terror_page 404 /404.html;\n\tlocation = /404.html {\n\t\troot /usr/share/nginx/html;\n\t\tinternal;\n\t}\n' /etc/nginx/sites-available/default
 
 nginx -t
-service nginx restart
+
+# Make sure nginx is running and config is loaded
+service nginx start
+service nginx reload || service nginx restart
